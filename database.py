@@ -65,19 +65,52 @@ def get_id(conn, sql, params):
 
 
 def ensure_user(conn, full_name, email, phone, address, role):
-    user_id = get_id(conn, "SELECT id FROM users WHERE email = ?", (email,))
-    if user_id:
-        return user_id
+    user_id = get_id(conn, "SELECT MaNguoiDung FROM NguoiDung WHERE Email = ?", (email,))
+    if not user_id:
+        cursor = conn.execute(
+            """
+            INSERT INTO NguoiDung(HoTen, Email, SDT, DiaChi)
+            OUTPUT INSERTED.MaNguoiDung
+            VALUES (?, ?, ?, ?)
+            """,
+            (full_name, email, phone, address),
+        )
+        user_id = int(cursor.fetchone()[0])
 
-    cursor = conn.execute(
-        """
-        INSERT INTO users(full_name, email, phone, address, role, password_hash)
-        OUTPUT INSERTED.id
-        VALUES (?, ?, ?, ?, ?, ?)
-        """,
-        (full_name, email, phone, address, role, password_hash("123456")),
-    )
-    return int(cursor.fetchone()[0])
+    role_id = get_id(conn, "SELECT MaVaiTro FROM VaiTro WHERE TenVaiTro = ?", (role,))
+    if not role_id:
+        cursor = conn.execute(
+            "INSERT INTO VaiTro(TenVaiTro) OUTPUT INSERTED.MaVaiTro VALUES (?)", (role,),
+        )
+        role_id = int(cursor.fetchone()[0])
+
+    tk_id = get_id(conn, "SELECT MaTK FROM TaiKhoan WHERE MaNguoiDung = ?", (user_id,))
+    if not tk_id:
+        conn.execute(
+            """
+            INSERT INTO TaiKhoan(MaNguoiDung, MaVaiTro, TenDangNhap, MatKhau, TrangThai)
+            VALUES (?, ?, ?, ?, 'active')
+            """,
+            (user_id, role_id, email, password_hash("123456")),
+        )
+
+    ret_id = None
+    if role == 'customer':
+        ret_id = get_id(conn, "SELECT MaKH FROM KhachHang WHERE MaNguoiDung = ?", (user_id,))
+        if not ret_id:
+            cursor = conn.execute("INSERT INTO KhachHang(MaNguoiDung) OUTPUT INSERTED.MaKH VALUES (?)", (user_id,))
+            ret_id = int(cursor.fetchone()[0])
+    elif role == 'staff':
+        ret_id = get_id(conn, "SELECT MaNV FROM NhanVien WHERE MaNguoiDung = ?", (user_id,))
+        if not ret_id:
+            cursor = conn.execute("INSERT INTO NhanVien(MaNguoiDung) OUTPUT INSERTED.MaNV VALUES (?)", (user_id,))
+            ret_id = int(cursor.fetchone()[0])
+    elif role == 'manager':
+        ret_id = get_id(conn, "SELECT MaQL FROM QuanLy WHERE MaNguoiDung = ?", (user_id,))
+        if not ret_id:
+            cursor = conn.execute("INSERT INTO QuanLy(MaNguoiDung) OUTPUT INSERTED.MaQL VALUES (?)", (user_id,))
+            ret_id = int(cursor.fetchone()[0])
+    return ret_id
 
 
 def ensure_service(conn, name, description, price):

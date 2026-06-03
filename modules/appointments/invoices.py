@@ -33,11 +33,13 @@ class InvoicesModule:
             cursor = conn.execute(
                 """
                 SELECT i.id, i.appointment_id, i.total_amount, i.created_at,
-                       a.pet_name, a.appointment_date, u.full_name, s.full_name
+                       a.pet_name, a.appointment_date, c_nd.HoTen as customer_name, s_nd.HoTen as staff_name
                 FROM invoices i
                 JOIN appointments a ON a.id = i.appointment_id
-                JOIN users u ON u.id = a.customer_id
-                JOIN users s ON s.id = i.staff_id
+                JOIN KhachHang c_kh ON c_kh.MaKH = a.customer_id
+                JOIN NguoiDung c_nd ON c_nd.MaNguoiDung = c_kh.MaNguoiDung
+                JOIN NhanVien s_nv ON s_nv.MaNV = i.staff_id
+                JOIN NguoiDung s_nd ON s_nd.MaNguoiDung = s_nv.MaNguoiDung
                 ORDER BY i.created_at DESC
                 """
             )
@@ -91,13 +93,18 @@ class InvoicesModule:
 
             appt_dict = {col[0]: appt[i] for i, col in enumerate(cursor.description)}
 
+            staff_id_row = conn.execute("SELECT MaNV FROM NhanVien WHERE MaNguoiDung = ?", (user["id"],)).fetchone()
+            if not staff_id_row:
+                return handler.redirect("/invoices?msg=" + quote("Không tìm thấy thông tin nhân viên."))
+            staff_id = staff_id_row[0]
+
             cursor = conn.execute(
                 """
                 INSERT INTO invoices(appointment_id, staff_id, total_amount)
                 OUTPUT INSERTED.id
                 VALUES (?, ?, ?)
                 """,
-                (appointment_id, user["id"], appt_dict["estimated_total"]),
+                (appointment_id, staff_id, appt_dict["estimated_total"]),
             )
             invoice_id = cursor.fetchone()[0]
 

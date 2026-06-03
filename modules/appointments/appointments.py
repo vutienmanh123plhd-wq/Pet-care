@@ -100,6 +100,11 @@ class AppointmentsModule:
                 return handler.redirect("/appointments/new?msg=" + quote("Dịch vụ không hợp lệ."))
 
             total = sum(row[3] for row in rows)
+            ma_kh_row = conn.execute("SELECT MaKH FROM KhachHang WHERE MaNguoiDung = ?", (user["id"],)).fetchone()
+            if not ma_kh_row:
+                return handler.redirect("/appointments/new?msg=" + quote("Không tìm thấy thông tin khách hàng."))
+            ma_kh = ma_kh_row[0]
+
             cursor = conn.execute(
                 """
                 INSERT INTO appointments(customer_id, pet_name, pet_type, appointment_date,
@@ -107,7 +112,7 @@ class AppointmentsModule:
                 OUTPUT INSERTED.id
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (user["id"], pet_name, pet_type, date, time, total, note),
+                (ma_kh, pet_name, pet_type, date, time, total, note),
             )
             appointment_id = cursor.fetchone()[0]
 
@@ -136,7 +141,8 @@ class AppointmentsModule:
                     SELECT a.id, a.pet_name, a.pet_type, a.appointment_date, a.appointment_time,
                            a.status, a.estimated_total
                     FROM appointments a
-                    WHERE a.customer_id = ?
+                    JOIN KhachHang kh ON kh.MaKH = a.customer_id
+                    WHERE kh.MaNguoiDung = ?
                     ORDER BY a.appointment_date DESC
                     """,
                     (user["id"],)
@@ -192,11 +198,12 @@ class AppointmentsModule:
         with db() as conn:
             cursor = conn.execute(
                 """
-                SELECT a.id, a.customer_id, a.pet_name, a.pet_type, a.appointment_date,
+                SELECT a.id, kh.MaNguoiDung, a.pet_name, a.pet_type, a.appointment_date,
                        a.appointment_time, a.status, a.estimated_total, a.note,
-                       u.full_name, u.email, u.phone
+                       nd.HoTen, nd.Email, nd.SDT
                 FROM appointments a
-                JOIN users u ON u.id = a.customer_id
+                JOIN KhachHang kh ON kh.MaKH = a.customer_id
+                JOIN NguoiDung nd ON nd.MaNguoiDung = kh.MaNguoiDung
                 WHERE a.id = ?
                 """,
                 (appointment_id,),
@@ -272,7 +279,10 @@ class AppointmentsModule:
 
         with db() as conn:
             conn.execute(
-                "UPDATE appointments SET status = 'cancelled' WHERE id = ? AND customer_id = ?",
+                """
+                UPDATE appointments SET status = 'cancelled' 
+                WHERE id = ? AND customer_id = (SELECT MaKH FROM KhachHang WHERE MaNguoiDung = ?)
+                """,
                 (appointment_id, user["id"])
             )
 

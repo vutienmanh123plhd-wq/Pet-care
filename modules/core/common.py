@@ -45,7 +45,15 @@ def current_user(handler):
     if not user_id:
         return None
     with db() as conn:
-        cursor = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        cursor = conn.execute("""
+            SELECT nd.MaNguoiDung as id, nd.HoTen as full_name, nd.Email as email,
+                   nd.SDT as phone, nd.DiaChi as address, vt.TenVaiTro as role,
+                   tk.TrangThai as status
+            FROM NguoiDung nd
+            JOIN TaiKhoan tk ON nd.MaNguoiDung = tk.MaNguoiDung
+            JOIN VaiTro vt ON tk.MaVaiTro = vt.MaVaiTro
+            WHERE nd.MaNguoiDung = ?
+        """, (user_id,))
         row = cursor.fetchone()
         if row:
             return {col[0]: row[i] for i, col in enumerate(cursor.description)}

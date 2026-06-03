@@ -42,7 +42,7 @@ class StatsModule:
             cursor = conn.execute("SELECT COUNT(*) FROM appointments")
             appt_count = cursor.fetchone()[0]
 
-            cursor = conn.execute("SELECT COUNT(*) FROM users WHERE role = 'customer'")
+            cursor = conn.execute("SELECT COUNT(*) FROM KhachHang")
             customer_count = cursor.fetchone()[0]
 
             cursor = conn.execute(

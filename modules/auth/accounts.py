@@ -60,7 +60,15 @@ class AccountsModule:
         email = form.get("email", [""])[0].strip().lower()
         password = form.get("password", [""])[0]
         with db() as conn:
-            cursor = conn.execute("SELECT * FROM users WHERE email = ? AND status = 'active'", (email,))
+            cursor = conn.execute("""
+                SELECT nd.MaNguoiDung as id, nd.HoTen as full_name, nd.Email as email,
+                       nd.SDT as phone, nd.DiaChi as address, vt.TenVaiTro as role,
+                       tk.MatKhau as password_hash, tk.TrangThai as status
+                FROM NguoiDung nd
+                JOIN TaiKhoan tk ON nd.MaNguoiDung = tk.MaNguoiDung
+                JOIN VaiTro vt ON tk.MaVaiTro = vt.MaVaiTro
+                WHERE nd.Email = ? AND tk.TrangThai = 'active'
+            """, (email,))
             row = cursor.fetchone()
             if row:
                 user = {col[0]: row[i] for i, col in enumerate(cursor.description)}
@@ -124,13 +132,28 @@ class AccountsModule:
 
         with db() as conn:
             try:
-                conn.execute(
-                    """
-                    INSERT INTO users(full_name, email, phone, address, role, password_hash)
-                    VALUES (?, ?, ?, ?, 'customer', ?)
-                    """,
-                    (full_name, email, phone, address, password_hash(password)),
+                exists = conn.execute("SELECT 1 FROM NguoiDung WHERE Email = ?", (email,)).fetchone()
+                if exists:
+                    return handler.redirect("/register?msg=" + quote("Email đã được sử dụng."))
+                
+                cursor = conn.execute(
+                    "INSERT INTO NguoiDung(HoTen, Email, SDT, DiaChi) OUTPUT INSERTED.MaNguoiDung VALUES (?, ?, ?, ?)",
+                    (full_name, email, phone, address),
                 )
+                user_id = int(cursor.fetchone()[0])
+                
+                role_id = conn.execute("SELECT MaVaiTro FROM VaiTro WHERE TenVaiTro = 'customer'").fetchone()
+                if not role_id:
+                    cursor = conn.execute("INSERT INTO VaiTro(TenVaiTro) OUTPUT INSERTED.MaVaiTro VALUES ('customer')")
+                    role_id = int(cursor.fetchone()[0])
+                else:
+                    role_id = int(role_id[0])
+                    
+                conn.execute(
+                    "INSERT INTO TaiKhoan(MaNguoiDung, MaVaiTro, TenDangNhap, MatKhau, TrangThai) VALUES (?, ?, ?, ?, 'active')",
+                    (user_id, role_id, email, password_hash(password)),
+                )
+                conn.execute("INSERT INTO KhachHang(MaNguoiDung) VALUES (?)", (user_id,))
             except Exception:
                 return handler.redirect("/register?msg=" + quote("Email đã được sử dụng."))
 
@@ -230,18 +253,16 @@ class AccountsModule:
             try:
                 if new_password:
                     conn.execute(
-                        """
-                        UPDATE users SET full_name = ?, email = ?, phone = ?, address = ?, password_hash = ?
-                        WHERE id = ?
-                        """,
-                        (full_name, email, phone, address, password_hash(new_password), user["id"]),
+                        "UPDATE NguoiDung SET HoTen = ?, Email = ?, SDT = ?, DiaChi = ? WHERE MaNguoiDung = ?",
+                        (full_name, email, phone, address, user["id"]),
+                    )
+                    conn.execute(
+                        "UPDATE TaiKhoan SET MatKhau = ? WHERE MaNguoiDung = ?",
+                        (password_hash(new_password), user["id"]),
                     )
                 else:
                     conn.execute(
-                        """
-                        UPDATE users SET full_name = ?, email = ?, phone = ?, address = ?
-                        WHERE id = ?
-                        """,
+                        "UPDATE NguoiDung SET HoTen = ?, Email = ?, SDT = ?, DiaChi = ? WHERE MaNguoiDung = ?",
                         (full_name, email, phone, address, user["id"]),
                     )
             except Exception:

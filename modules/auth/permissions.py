@@ -34,10 +34,12 @@ class PermissionsModule:
         with db() as conn:
             cursor = conn.execute(
                 """
-                SELECT id, full_name, email, phone, role, status, created_at
-                FROM users
-                WHERE role IN ('staff', 'manager')
-                ORDER BY full_name
+                SELECT nd.MaNguoiDung, nd.HoTen, nd.Email, nd.SDT, vt.TenVaiTro, tk.TrangThai, GETDATE()
+                FROM NguoiDung nd
+                JOIN TaiKhoan tk ON nd.MaNguoiDung = tk.MaNguoiDung
+                JOIN VaiTro vt ON tk.MaVaiTro = vt.MaVaiTro
+                WHERE vt.TenVaiTro IN ('staff', 'manager')
+                ORDER BY nd.HoTen
                 """
             )
             rows = cursor.fetchall()
@@ -143,13 +145,32 @@ class PermissionsModule:
 
         with db() as conn:
             try:
-                conn.execute(
-                    """
-                    INSERT INTO users(full_name, email, phone, address, role, password_hash, status)
-                    VALUES (?, ?, ?, ?, ?, ?, 'active')
-                    """,
-                    (full_name, email, phone, address, role, password_hash(password)),
+                exists = conn.execute("SELECT 1 FROM NguoiDung WHERE Email = ?", (email,)).fetchone()
+                if exists:
+                    return handler.redirect("/employees/add?msg=" + quote("Email đã được sử dụng."))
+
+                cursor = conn.execute(
+                    "INSERT INTO NguoiDung(HoTen, Email, SDT, DiaChi) OUTPUT INSERTED.MaNguoiDung VALUES (?, ?, ?, ?)",
+                    (full_name, email, phone, address),
                 )
+                emp_id = int(cursor.fetchone()[0])
+
+                role_id = conn.execute("SELECT MaVaiTro FROM VaiTro WHERE TenVaiTro = ?", (role,)).fetchone()
+                if not role_id:
+                    cursor = conn.execute("INSERT INTO VaiTro(TenVaiTro) OUTPUT INSERTED.MaVaiTro VALUES (?)", (role,))
+                    role_id = int(cursor.fetchone()[0])
+                else:
+                    role_id = int(role_id[0])
+
+                conn.execute(
+                    "INSERT INTO TaiKhoan(MaNguoiDung, MaVaiTro, TenDangNhap, MatKhau, TrangThai) VALUES (?, ?, ?, ?, 'active')",
+                    (emp_id, role_id, email, password_hash(password)),
+                )
+
+                if role == 'staff':
+                    conn.execute("INSERT INTO NhanVien(MaNguoiDung) VALUES (?)", (emp_id,))
+                else:
+                    conn.execute("INSERT INTO QuanLy(MaNguoiDung) VALUES (?)", (emp_id,))
             except Exception:
                 return handler.redirect("/employees/add?msg=" + quote("Email đã được sử dụng."))
 
@@ -167,7 +188,15 @@ class PermissionsModule:
 
         with db() as conn:
             cursor = conn.execute(
-                "SELECT id, full_name, email, phone, address, role, status FROM users WHERE id = ? AND role IN ('staff', 'manager')",
+                \"\"\"
+                SELECT nd.MaNguoiDung as id, nd.HoTen as full_name, nd.Email as email,
+                       nd.SDT as phone, nd.DiaChi as address, vt.TenVaiTro as role,
+                       tk.TrangThai as status
+                FROM NguoiDung nd
+                JOIN TaiKhoan tk ON nd.MaNguoiDung = tk.MaNguoiDung
+                JOIN VaiTro vt ON tk.MaVaiTro = vt.MaVaiTro
+                WHERE nd.MaNguoiDung = ? AND vt.TenVaiTro IN ('staff', 'manager')
+                \"\"\",
                 (emp_id,)
             )
             emp = cursor.fetchone()
@@ -258,20 +287,43 @@ class PermissionsModule:
             try:
                 if new_password:
                     conn.execute(
-                        """
-                        UPDATE users SET full_name = ?, email = ?, phone = ?, address = ?, role = ?, status = ?, password_hash = ?
-                        WHERE id = ?
-                        """,
-                        (full_name, email, phone, address, role, status, password_hash(new_password), emp_id),
+                        "UPDATE NguoiDung SET HoTen = ?, Email = ?, SDT = ?, DiaChi = ? WHERE MaNguoiDung = ?",
+                        (full_name, email, phone, address, emp_id),
+                    )
+                    conn.execute(
+                        "UPDATE TaiKhoan SET MatKhau = ?, TrangThai = ? WHERE MaNguoiDung = ?",
+                        (password_hash(new_password), status, emp_id),
                     )
                 else:
                     conn.execute(
-                        """
-                        UPDATE users SET full_name = ?, email = ?, phone = ?, address = ?, role = ?, status = ?
-                        WHERE id = ?
-                        """,
-                        (full_name, email, phone, address, role, status, emp_id),
+                        "UPDATE NguoiDung SET HoTen = ?, Email = ?, SDT = ?, DiaChi = ? WHERE MaNguoiDung = ?",
+                        (full_name, email, phone, address, emp_id),
                     )
+                    conn.execute(
+                        "UPDATE TaiKhoan SET TrangThai = ? WHERE MaNguoiDung = ?",
+                        (status, emp_id),
+                    )
+                    
+                old_role_id = conn.execute("SELECT MaVaiTro FROM TaiKhoan WHERE MaNguoiDung = ?", (emp_id,)).fetchone()[0]
+                old_role = conn.execute("SELECT TenVaiTro FROM VaiTro WHERE MaVaiTro = ?", (old_role_id,)).fetchone()[0]
+                if old_role != role:
+                    role_id = conn.execute("SELECT MaVaiTro FROM VaiTro WHERE TenVaiTro = ?", (role,)).fetchone()
+                    if not role_id:
+                        cursor = conn.execute("INSERT INTO VaiTro(TenVaiTro) OUTPUT INSERTED.MaVaiTro VALUES (?)", (role,))
+                        role_id = int(cursor.fetchone()[0])
+                    else:
+                        role_id = int(role_id[0])
+                        
+                    conn.execute("UPDATE TaiKhoan SET MaVaiTro = ? WHERE MaNguoiDung = ?", (role_id, emp_id))
+                    if old_role == 'staff':
+                        conn.execute("DELETE FROM NhanVien WHERE MaNguoiDung = ?", (emp_id,))
+                    elif old_role == 'manager':
+                        conn.execute("DELETE FROM QuanLy WHERE MaNguoiDung = ?", (emp_id,))
+                        
+                    if role == 'staff':
+                        conn.execute("INSERT INTO NhanVien(MaNguoiDung) VALUES (?)", (emp_id,))
+                    elif role == 'manager':
+                        conn.execute("INSERT INTO QuanLy(MaNguoiDung) VALUES (?)", (emp_id,))
             except Exception:
                 return handler.redirect(f"/employees/{emp_id}/edit?msg=" + quote("Email đã được sử dụng bởi tài khoản khác."))
 
@@ -292,7 +344,13 @@ class PermissionsModule:
 
         with db() as conn:
             cursor = conn.execute(
-                "SELECT id, full_name, email, role FROM users WHERE id = ? AND role IN ('staff', 'manager')",
+                \"\"\"
+                SELECT nd.MaNguoiDung, nd.HoTen, nd.Email, vt.TenVaiTro
+                FROM NguoiDung nd
+                JOIN TaiKhoan tk ON nd.MaNguoiDung = tk.MaNguoiDung
+                JOIN VaiTro vt ON tk.MaVaiTro = vt.MaVaiTro
+                WHERE nd.MaNguoiDung = ? AND vt.TenVaiTro IN ('staff', 'manager')
+                \"\"\",
                 (emp_id,)
             )
             emp = cursor.fetchone()
@@ -333,6 +391,9 @@ class PermissionsModule:
             return handler.redirect("/employees?msg=" + quote("Không thể xóa tài khoản của chính bạn."))
 
         with db() as conn:
-            conn.execute("DELETE FROM users WHERE id = ? AND role IN ('staff', 'manager')", (emp_id,))
+            conn.execute("DELETE FROM NhanVien WHERE MaNguoiDung = ?", (emp_id,))
+            conn.execute("DELETE FROM QuanLy WHERE MaNguoiDung = ?", (emp_id,))
+            conn.execute("DELETE FROM TaiKhoan WHERE MaNguoiDung = ?", (emp_id,))
+            conn.execute("DELETE FROM NguoiDung WHERE MaNguoiDung = ?", (emp_id,))
 
         handler.redirect("/employees?msg=" + quote("Xóa nhân viên thành công."))
