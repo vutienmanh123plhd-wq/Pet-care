@@ -117,6 +117,14 @@ File tạo bảng:
 schema.sql
 ```
 
+File xử lý database ở backend:
+
+```text
+database.py
+```
+
+`database.py` phụ trách kết nối SQL Server, chạy `schema.sql`, tự thêm dữ liệu mẫu và cung cấp hàm `db()` cho các chức năng trong `app.py`.
+
 Các bảng chính:
 
 - `users`
