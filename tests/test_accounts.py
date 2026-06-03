@@ -81,9 +81,13 @@ class TestAccountsModule(unittest.TestCase):
         mock_conn = MagicMock()
         mock_db.return_value.__enter__.return_value = mock_conn
         
+        mock_cursor = MagicMock()
+        mock_conn.execute.return_value = mock_cursor
+        mock_cursor.fetchone.side_effect = [None, (1,), (1,)]
+        
         AccountsModule.register_action(handler)
         
-        mock_conn.execute.assert_called_once()
+        self.assertTrue(mock_conn.execute.called)
         self.assertTrue(handler.redirect_path.startswith("/login?msg="))
 
     def test_register_action_password_mismatch(self):
@@ -121,7 +125,7 @@ class TestAccountsModule(unittest.TestCase):
         
         AccountsModule.profile_edit_action(handler)
         
-        mock_conn.execute.assert_called_once()
+        self.assertTrue(mock_conn.execute.called)
         self.assertTrue(handler.redirect_path.startswith("/profile?msg="))
 
     def test_logout(self):

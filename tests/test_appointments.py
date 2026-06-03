@@ -52,7 +52,7 @@ class TestAppointmentsModule(unittest.TestCase):
         
         AppointmentsModule.create_appointment(handler)
         
-        self.assertEqual(mock_conn.execute.call_count, 4) # SELECT + 1 INSERT appt + 2 INSERT appt_services
+        self.assertEqual(mock_conn.execute.call_count, 5) # SELECT KhachHang + SELECT services + 1 INSERT appt + 2 INSERT appt_services
         self.assertTrue(handler.redirect_path.startswith("/appointments?msg="))
 
     @patch('modules.appointments.appointments.current_user')

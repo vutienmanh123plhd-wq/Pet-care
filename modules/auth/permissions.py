@@ -188,7 +188,7 @@ class PermissionsModule:
 
         with db() as conn:
             cursor = conn.execute(
-                \"\"\"
+                """
                 SELECT nd.MaNguoiDung as id, nd.HoTen as full_name, nd.Email as email,
                        nd.SDT as phone, nd.DiaChi as address, vt.TenVaiTro as role,
                        tk.TrangThai as status
@@ -196,7 +196,7 @@ class PermissionsModule:
                 JOIN TaiKhoan tk ON nd.MaNguoiDung = tk.MaNguoiDung
                 JOIN VaiTro vt ON tk.MaVaiTro = vt.MaVaiTro
                 WHERE nd.MaNguoiDung = ? AND vt.TenVaiTro IN ('staff', 'manager')
-                \"\"\",
+                """,
                 (emp_id,)
             )
             emp = cursor.fetchone()
@@ -344,13 +344,13 @@ class PermissionsModule:
 
         with db() as conn:
             cursor = conn.execute(
-                \"\"\"
+                """
                 SELECT nd.MaNguoiDung, nd.HoTen, nd.Email, vt.TenVaiTro
                 FROM NguoiDung nd
                 JOIN TaiKhoan tk ON nd.MaNguoiDung = tk.MaNguoiDung
                 JOIN VaiTro vt ON tk.MaVaiTro = vt.MaVaiTro
                 WHERE nd.MaNguoiDung = ? AND vt.TenVaiTro IN ('staff', 'manager')
-                \"\"\",
+                """,
                 (emp_id,)
             )
             emp = cursor.fetchone()

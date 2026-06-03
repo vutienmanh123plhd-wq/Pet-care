@@ -40,6 +40,10 @@ class TestPermissionsModule(unittest.TestCase):
         mock_conn = MagicMock()
         mock_db.return_value.__enter__.return_value = mock_conn
         
+        mock_cursor = MagicMock()
+        mock_conn.execute.return_value = mock_cursor
+        mock_cursor.fetchone.side_effect = [None, (1,), (1,)]
+        
         PermissionsModule.add_employee_action(handler)
         
         self.assertTrue(mock_conn.execute.called)

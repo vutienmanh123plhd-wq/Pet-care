@@ -22,7 +22,7 @@ CREATE TABLE TaiKhoan (
     MaNguoiDung INT,
     MaVaiTro INT,
     TenDangNhap NVARCHAR(50),
-    MatKhau NVARCHAR(50),
+    MatKhau NVARCHAR(255),
     TrangThai NVARCHAR(30),
     FOREIGN KEY (MaNguoiDung) REFERENCES NguoiDung(MaNguoiDung),
     FOREIGN KEY (MaVaiTro) REFERENCES VaiTro(MaVaiTro)
