@@ -79,19 +79,17 @@ def init_db():
     """Initialize database schema and demo data"""
     try:
         with db() as conn:
-            # Read and execute schema
             schema_sql = SCHEMA_PATH.read_text(encoding="utf-8")
+            for statement in schema_sql.split(';'):
+                statement = statement.strip()
+                if statement:
+                    conn.execute(statement)
+
             cursor = conn.execute("SELECT COUNT(*) as cnt FROM users")
             result = cursor.fetchone()
             count = result[0] if result else 0
             
             if count == 0:
-                # Execute schema creation
-                for statement in schema_sql.split(';'):
-                    statement = statement.strip()
-                    if statement:
-                        conn.execute(statement)
-                
                 # Insert demo users
                 users = [
                     ("Nguyễn Văn A", "khach@example.com", "0345345632", "Hà Nội", "customer"),
@@ -254,22 +252,29 @@ def status_badge(status):
 
 class PetCareHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path == "/":
+        path = urlparse(self.path).path
+        if path == "/":
             self.home()
-        elif self.path == "/login":
+        elif path == "/login":
             self.login_page()
-        elif self.path == "/register":
+        elif path == "/register":
             self.register_page()
-        elif self.path == "/dashboard":
+        elif path == "/dashboard":
             self.dashboard()
-        elif self.path == "/services":
+        elif path == "/services":
             self.services_page()
-        elif self.path.startswith("/appointments"):
-            if self.path == "/appointments/new":
+        elif path.startswith("/appointments"):
+            if path == "/appointments/new":
                 self.create_appointment_page()
+            elif path.startswith("/appointments/"):
+                self.appointment_detail(path.rsplit("/", 1)[-1])
             else:
                 self.appointments()
-        elif self.path == "/logout":
+        elif path == "/invoices":
+            self.invoices()
+        elif path == "/stats":
+            self.stats()
+        elif path == "/logout":
             self.logout()
         else:
             self.send_error(404)
@@ -570,13 +575,11 @@ class PetCareHandler(BaseHTTPRequestHandler):
                 """
                 INSERT INTO appointments(customer_id, pet_name, pet_type, appointment_date,
                                          appointment_time, estimated_total, note)
+                OUTPUT INSERTED.id
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (user["id"], pet_name, pet_type, date, time, total, note),
             )
-            
-            # Get last inserted ID
-            cursor.execute("SELECT @@IDENTITY")
             appointment_id = cursor.fetchone()[0]
             
             for row in rows:
@@ -629,7 +632,7 @@ class PetCareHandler(BaseHTTPRequestHandler):
                 <td>{row[3]} {row[4]}</td>
                 <td>{money(row[6])}</td>
                 <td>{status_badge(row[5])}</td>
-                <td><a href="/appointments/{row[0]}">Xem</a></td>
+                <td><a class="btn secondary" href="/appointments/{row[0]}">Xem</a></td>
             </tr>
             """
             for row in rows
@@ -645,6 +648,85 @@ class PetCareHandler(BaseHTTPRequestHandler):
         </div>
         """
         self.send_html(layout("Lịch hẹn", content, user, "appointments", self.query_msg()))
+
+    def appointment_detail(self, appointment_id):
+        user = self.require_user()
+        if not user:
+            return
+        if not str(appointment_id).isdigit():
+            return self.redirect("/appointments?msg=" + quote("Mã lịch hẹn không hợp lệ."))
+
+        with db() as conn:
+            cursor = conn.execute(
+                """
+                SELECT a.id, a.customer_id, a.pet_name, a.pet_type, a.appointment_date,
+                       a.appointment_time, a.status, a.estimated_total, a.note,
+                       u.full_name, u.email, u.phone
+                FROM appointments a
+                JOIN users u ON u.id = a.customer_id
+                WHERE a.id = ?
+                """,
+                (appointment_id,),
+            )
+            appt = cursor.fetchone()
+            if not appt:
+                return self.redirect("/appointments?msg=" + quote("Không tìm thấy lịch hẹn."))
+            if user["role"] == "customer" and appt[1] != user["id"]:
+                return self.redirect("/appointments?msg=" + quote("Bạn không có quyền xem lịch hẹn này."))
+
+            cursor = conn.execute(
+                """
+                SELECT s.name, ads.quantity, ads.unit_price, ads.quantity * ads.unit_price AS total
+                FROM appointment_services ads
+                JOIN services s ON s.id = ads.service_id
+                WHERE ads.appointment_id = ?
+                """,
+                (appointment_id,),
+            )
+            details = cursor.fetchall()
+
+        detail_rows = "".join(
+            f"<tr><td>{escape(row[0])}</td><td>{row[1]}</td><td>{money(row[2])}</td><td>{money(row[3])}</td></tr>"
+            for row in details
+        )
+        cancel_form = ""
+        if user["role"] == "customer" and appt[6] == "booked":
+            cancel_form = f"""
+            <form method="post" action="/appointments/cancel">
+                <input type="hidden" name="appointment_id" value="{appt[0]}">
+                <button class="btn danger" type="submit">Hủy lịch hẹn</button>
+            </form>
+            """
+        invoice_form = ""
+        if user["role"] in ("staff", "manager") and appt[6] == "booked":
+            invoice_form = f"""
+            <form method="post" action="/invoices">
+                <input type="hidden" name="appointment_id" value="{appt[0]}">
+                <button class="btn success" type="submit">Tạo hóa đơn</button>
+            </form>
+            """
+        content = f"""
+        <div class="card">
+            <h1>Chi tiết lịch hẹn #{appt[0]}</h1>
+            <div class="grid grid-2">
+                <p><strong>Khách hàng:</strong> {escape(appt[9])}<br><span class="muted">{escape(appt[11])} - {escape(appt[10])}</span></p>
+                <p><strong>Thú cưng:</strong> {escape(appt[2])} - {escape(appt[3])}<br><strong>Trạng thái:</strong> {status_badge(appt[6])}</p>
+                <p><strong>Thời gian:</strong> {appt[5]} ngày {appt[4]}</p>
+                <p><strong>Ghi chú:</strong> {escape(appt[8] or 'Không có')}</p>
+            </div>
+            <table>
+                <thead><tr><th>Dịch vụ</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
+                <tbody>{detail_rows}</tbody>
+            </table>
+            <p class="right"><strong>Tổng dự kiến: {money(appt[7])}</strong></p>
+            <div class="actions">
+                <a class="btn secondary" href="/appointments">Quay lại</a>
+                {cancel_form}
+                {invoice_form}
+            </div>
+        </div>
+        """
+        self.send_html(layout("Chi tiết lịch hẹn", content, user, "appointments"))
     
     def cancel_appointment(self):
         user = self.require_roles(("customer",))
@@ -698,10 +780,13 @@ class PetCareHandler(BaseHTTPRequestHandler):
             appt_dict = {col[0]: appt[i] for i, col in enumerate(cursor.description)}
             
             cursor = conn.execute(
-                "INSERT INTO invoices(appointment_id, staff_id, total_amount) VALUES (?, ?, ?)",
+                """
+                INSERT INTO invoices(appointment_id, staff_id, total_amount)
+                OUTPUT INSERTED.id
+                VALUES (?, ?, ?)
+                """,
                 (appointment_id, user["id"], appt_dict["estimated_total"]),
             )
-            cursor.execute("SELECT @@IDENTITY")
             invoice_id = cursor.fetchone()[0]
             
             cursor = conn.execute(

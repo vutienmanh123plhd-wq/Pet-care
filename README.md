@@ -1,35 +1,48 @@
-## Cách chạy
+# PetCare Web - Module quản lý lịch hẹn
 
-### Phiên bản SQLite (mặc định)
+Project demo theo đề tài **Hệ thống quản lý cửa hàng chăm sóc thú cưng** trong `BTL_NMCNPM_N09.docx`.
+
+Phần cần demo chính của nhóm/module này là **quản lý lịch hẹn**:
+
+- Khách hàng đặt lịch hẹn.
+- Khách hàng xem lịch hẹn, xem chi tiết, hủy lịch.
+- Nhân viên kiểm tra lịch hẹn khách hàng, tìm kiếm và xem chi tiết.
+
+## Bản dùng để bảo vệ: SQL Server
+
+### 1. Cài thư viện
 
 ```powershell
 cd C:\Users\quang\Desktop\btl_cnpm\petcare_web
-python app.py
-```
-
-### Phiên bản SQL Server
-
-#### 1. Cài đặt dependencies
-
-```powershell
 pip install -r requirements_mssql.txt
 ```
 
-#### 2. Cấu hình kết nối SQL Server
+### 2. Tạo database
 
-Chỉnh sửa file `config.py`:
+Trong SQL Server Management Studio tạo database:
+
+```sql
+CREATE DATABASE petcare;
+```
+
+### 3. Cấu hình kết nối
+
+Sửa file `config.py` cho đúng SQL Server của máy:
 
 ```python
 DB_CONFIG = {
-    "server": "localhost",          # Tên server hoặc IP
-    "database": "petcare",          # Tên database
-    "uid": "sa",                    # Tên tài khoản (SQL authentication)
-    "pwd": "YourPassword123",       # Mật khẩu
+    "server": "localhost",
+    "database": "petcare",
+    "uid": "sa",
+    "pwd": "YourPassword123",
     "driver": "{ODBC Driver 17 for SQL Server}",
-    "trusted_connection": False,    # False cho SQL authentication, True cho Windows auth
+    "trusted_connection": False,
 }
+```
 
-# Hoặc cho Windows Authentication:
+Nếu dùng Windows Authentication thì đặt:
+
+```python
 DB_CONFIG = {
     "server": "localhost",
     "database": "petcare",
@@ -38,7 +51,7 @@ DB_CONFIG = {
 }
 ```
 
-#### 3. Chạy ứng dụng
+### 4. Chạy web
 
 ```powershell
 python app_mssql.py
@@ -50,33 +63,44 @@ Mở trình duyệt:
 http://127.0.0.1:8000
 ```
 
-#### Lưu ý quan trọng
-
-- **ODBC Driver**: Cần cài ODBC Driver 17 for SQL Server trên máy
-  - Download: https://learn.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server
-  - Hoặc dùng `choco install odbc-driver-17-sql-server` (Chocolatey)
-
-- **Database**: Phải tạo database `petcare` trước khi chạy ứng dụng
-
-- **SQL Server**: Phải có SQL Server instance đang chạy
+Khi chạy lần đầu, ứng dụng tự tạo bảng theo `schema_mssql.sql` và thêm dữ liệu mẫu nếu bảng `users` đang rỗng.
 
 ## Tài khoản mẫu
 
 Mật khẩu của tất cả tài khoản mẫu: `123456`
 
-| Vai trò    | Email                  |
-| ---------- | ---------------------- |
-| Khách hàng | `khach@example.com`    |
-| Nhân viên  | `nhanvien@example.com` |
-| Quản lý    | `quanly@example.com`   |
+| Vai trò | Email |
+|---|---|
+| Khách hàng | `khach@example.com` |
+| Nhân viên | `nhanvien@example.com` |
+| Quản lý | `quanly@example.com` |
 
-## Chức năng chính
+## Cách demo module quản lý lịch hẹn
 
-- Khách hàng: đăng ký, đăng nhập, xem dịch vụ, đặt lịch hẹn, xem lịch hẹn, xem chi tiết, hủy lịch.
-- Nhân viên: kiểm tra lịch hẹn, tìm khách hàng, xem chi tiết lịch, tạo hóa đơn.
-- Quản lý: quản lý dịch vụ, xem thống kê doanh thu, lịch hẹn, khách hàng và lượt sử dụng dịch vụ.
+### Luồng khách hàng
 
-## CSDL
+1. Đăng nhập bằng `khach@example.com`.
+2. Vào **Đặt lịch**.
+3. Chọn dịch vụ, nhập ngày giờ, tên thú cưng và xác nhận đặt lịch.
+4. Vào **Lịch của tôi** để xem danh sách lịch.
+5. Bấm **Xem** để xem chi tiết.
+6. Nếu lịch còn trạng thái đã đặt, bấm **Hủy lịch hẹn** để hủy.
+
+### Luồng nhân viên
+
+1. Đăng nhập bằng `nhanvien@example.com`.
+2. Vào **Kiểm tra lịch**.
+3. Xem danh sách lịch hẹn của khách hàng.
+4. Bấm **Xem** để xem chi tiết lịch hẹn.
+5. Có thể bấm **Tạo hóa đơn** nếu muốn demo phần liên kết nghiệp vụ tại quầy.
+
+## CSDL SQL Server
+
+File thiết kế và tạo bảng:
+
+```text
+schema_mssql.sql
+```
 
 Các bảng chính:
 
@@ -87,4 +111,17 @@ Các bảng chính:
 - `invoices`
 - `invoice_details`
 
-Database được tự động tạo và seed dữ liệu mẫu khi chạy lần đầu.
+Riêng module quản lý lịch hẹn dùng chủ yếu:
+
+- `users` với vai trò khách hàng/nhân viên
+- `services`
+- `appointments`
+- `appointment_services`
+
+## SQLite để làm gì?
+
+`app.py`, `schema.sql` và `data/petcare.db` là bản SQLite cũ để chạy nhanh khi máy không có SQL Server. Khi bảo vệ với yêu cầu CSDL SQL Server, không cần demo SQLite. Có thể giữ làm bản dự phòng, nhưng bản chính nên chạy bằng:
+
+```powershell
+python app_mssql.py
+```
