@@ -1,0 +1,312 @@
+:root {
+  --navy: #1f4d78;
+  --blue: #2e74b5;
+  --light-blue: #eaf3fb;
+  --bg: #f4f7fb;
+  --panel: #ffffff;
+  --border: #d6dee8;
+  --text: #102033;
+  --muted: #5b677a;
+  --green: #198754;
+  --red: #c0392b;
+  --amber: #b7791f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+a {
+  color: var(--blue);
+  text-decoration: none;
+}
+
+.topbar {
+  align-items: center;
+  background: var(--navy);
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  min-height: 68px;
+  padding: 0 28px;
+}
+
+.brand {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.user-pill {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 8px 14px;
+}
+
+.layout {
+  display: flex;
+  min-height: calc(100vh - 68px);
+}
+
+.sidebar {
+  background: #eef3f8;
+  border-right: 1px solid var(--border);
+  padding: 22px 16px;
+  flex: 0 0 230px;
+}
+
+.sidebar a {
+  border-radius: 8px;
+  color: var(--navy);
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding: 12px 14px;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+  background: #d8e8f6;
+}
+
+.content {
+  padding: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+}
+
+.hero,
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(31, 77, 120, 0.08);
+  padding: 24px;
+}
+
+.hero {
+  width: 100%;
+  max-width: 980px;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--navy);
+  margin-top: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.grid-2 > * {
+  flex: 1 1 45%;
+  min-width: 80px;
+}
+
+.grid-3 > * {
+  flex: 1 1 30%;
+}
+
+.stat {
+  border-left: 5px solid var(--blue);
+}
+
+.stat strong {
+  display: block;
+  font-size: 30px;
+  margin-top: 6px;
+}
+
+label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid #b8c3d1;
+  border-radius: 7px;
+  font: inherit;
+  padding: 11px 12px;
+  width: 100%;
+}
+
+textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.form-row {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn {
+  background: var(--blue);
+  border: 0;
+  border-radius: 7px;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  font-weight: 700;
+  padding: 11px 16px;
+}
+
+.btn.secondary {
+  background: #6c757d;
+}
+
+.btn.danger {
+  background: var(--red);
+}
+
+.btn.success {
+  background: var(--green);
+}
+
+.btn.warning {
+  background: var(--amber);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: var(--light-blue);
+  color: var(--navy);
+}
+
+.badge {
+  border-radius: 999px;
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 5px 9px;
+}
+
+.badge.booked {
+  background: #d8e8f6;
+  color: var(--navy);
+}
+
+.badge.cancelled {
+  background: #f8d7da;
+  color: #842029;
+}
+
+.badge.paid {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+.flash {
+  background: #fff3cd;
+  border: 1px solid #ffe69c;
+  border-radius: 8px;
+  color: #664d03;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+}
+
+.service-list {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.service-option {
+  align-items: center;
+  background: #fbfcfe;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+}
+
+.service-option input {
+  width: auto;
+}
+
+.right {
+  text-align: right;
+}
+
+.demo-accounts {
+  background: #f0f8ff;
+  border: 2px solid #2e74b5;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 24px;
+}
+
+.demo-accounts h3 {
+  margin-top: 0;
+  color: #1f4d78;
+  font-size: 16px;
+}
+
+.demo-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.demo-item {
+  background: #ffffff;
+  border: 1px solid #d6dee8;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.demo-item strong {
+  color: #1f4d78;
+  display: block;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 768px) {
+  .demo-list {
+    grid-template-columns: 1fr;
+  }
+}
