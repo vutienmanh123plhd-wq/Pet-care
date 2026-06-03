@@ -438,6 +438,15 @@ class PetCareHandler(BaseHTTPRequestHandler):
         if cookie:
             self.send_header("Set-Cookie", cookie)
         self.end_headers()
+
+    def logout(self):
+        raw_cookie = self.headers.get("Cookie", "")
+        jar = cookies.SimpleCookie(raw_cookie)
+        sid = jar.get("sid")
+        if sid:
+            SESSIONS.pop(sid.value, None)
+        expired_cookie = "sid=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax"
+        self.redirect("/login?msg=" + quote("Đăng xuất thành công."), expired_cookie)
     
     def read_form(self):
         length = int(self.headers.get("Content-Length", 0))
