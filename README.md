@@ -65,7 +65,7 @@ Mở trình duyệt:
 http://127.0.0.1:8000
 ```
 
-Khi chạy lần đầu, ứng dụng tự tạo bảng theo `schema.sql` và thêm dữ liệu mẫu nếu bảng `users` đang rỗng.
+Khi chạy, ứng dụng tự tạo bảng theo `schema.sql` và tự bổ sung dữ liệu mẫu nếu dữ liệu đó chưa tồn tại.
 
 ## Tài khoản mẫu
 
@@ -76,6 +76,19 @@ Mật khẩu của tất cả tài khoản mẫu: `123456`
 | Khách hàng | `khach@example.com` |
 | Nhân viên | `nhanvien@example.com` |
 | Quản lý | `quanly@example.com` |
+
+## Dữ liệu mẫu
+
+Ứng dụng có sẵn một số dữ liệu để demo module quản lý lịch hẹn:
+
+| Nhóm dữ liệu | Ví dụ |
+|---|---|
+| Khách hàng | `khach@example.com`, `chau@example.com`, `an@example.com`, `ha@example.com` |
+| Dịch vụ | Tắm thú cưng, Cắt tỉa lông, Vệ sinh tai móng, Khám sức khỏe cơ bản, Tiêm phòng |
+| Lịch hẹn đã đặt | Bun, Milu, Bông |
+| Lịch hẹn đã hủy | Miu |
+| Lịch hẹn đã thanh toán | Lucky, Ken |
+| Hóa đơn mẫu | Tự sinh cho các lịch hẹn đã thanh toán |
 
 ## Cách demo module quản lý lịch hẹn
 
