@@ -8,10 +8,8 @@ Configuration for PetCare Web Application
 DB_CONFIG = {
     "server": "localhost",  # SQL Server instance name/IP
     "database": "petcare",  # Database name
-    "uid": "sa",  # SQL Server username
-    "pwd": "YourPassword123",  # SQL Server password
     "driver": "{ODBC Driver 17 for SQL Server}",  # ODBC driver
-    "trusted_connection": False,  # Set to True for Windows Authentication
+    "trusted_connection": True,  # Windows Authentication
 }
 
 # For Windows Authentication (trusted_connection=True):
