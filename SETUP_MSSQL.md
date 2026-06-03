@@ -59,13 +59,13 @@ DB_CONFIG = {
 ## Bước 5: Cài đặt Python Dependencies
 
 ```powershell
-pip install -r requirements_mssql.txt
+pip install -r requirements.txt
 ```
 
 ## Bước 6: Chạy ứng dụng
 
 ```powershell
-python app_mssql.py
+python app.py
 ```
 
 ## Troubleshooting

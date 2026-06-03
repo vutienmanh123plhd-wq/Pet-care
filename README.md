@@ -2,22 +2,24 @@
 
 Project demo theo đề tài **Hệ thống quản lý cửa hàng chăm sóc thú cưng** trong `BTL_NMCNPM_N09.docx`.
 
-Phần cần demo chính của nhóm/module này là **quản lý lịch hẹn**:
+Project hiện chỉ dùng **SQL Server** cho phần cơ sở dữ liệu.
+
+## Chức năng module quản lý lịch hẹn
 
 - Khách hàng đặt lịch hẹn.
 - Khách hàng xem lịch hẹn, xem chi tiết, hủy lịch.
 - Nhân viên kiểm tra lịch hẹn khách hàng, tìm kiếm và xem chi tiết.
 
-## Bản dùng để bảo vệ: SQL Server
+## Cách chạy
 
 ### 1. Cài thư viện
 
 ```powershell
 cd C:\Users\quang\Desktop\btl_cnpm\petcare_web
-pip install -r requirements_mssql.txt
+pip install -r requirements.txt
 ```
 
-### 2. Tạo database
+### 2. Tạo database SQL Server
 
 Trong SQL Server Management Studio tạo database:
 
@@ -40,7 +42,7 @@ DB_CONFIG = {
 }
 ```
 
-Nếu dùng Windows Authentication thì đặt:
+Nếu dùng Windows Authentication:
 
 ```python
 DB_CONFIG = {
@@ -54,7 +56,7 @@ DB_CONFIG = {
 ### 4. Chạy web
 
 ```powershell
-python app_mssql.py
+python app.py
 ```
 
 Mở trình duyệt:
@@ -63,7 +65,7 @@ Mở trình duyệt:
 http://127.0.0.1:8000
 ```
 
-Khi chạy lần đầu, ứng dụng tự tạo bảng theo `schema_mssql.sql` và thêm dữ liệu mẫu nếu bảng `users` đang rỗng.
+Khi chạy lần đầu, ứng dụng tự tạo bảng theo `schema.sql` và thêm dữ liệu mẫu nếu bảng `users` đang rỗng.
 
 ## Tài khoản mẫu
 
@@ -96,10 +98,10 @@ Mật khẩu của tất cả tài khoản mẫu: `123456`
 
 ## CSDL SQL Server
 
-File thiết kế và tạo bảng:
+File tạo bảng:
 
 ```text
-schema_mssql.sql
+schema.sql
 ```
 
 Các bảng chính:
@@ -117,11 +119,3 @@ Riêng module quản lý lịch hẹn dùng chủ yếu:
 - `services`
 - `appointments`
 - `appointment_services`
-
-## SQLite để làm gì?
-
-`app.py`, `schema.sql` và `data/petcare.db` là bản SQLite cũ để chạy nhanh khi máy không có SQL Server. Khi bảo vệ với yêu cầu CSDL SQL Server, không cần demo SQLite. Có thể giữ làm bản dự phòng, nhưng bản chính nên chạy bằng:
-
-```powershell
-python app_mssql.py
-```
